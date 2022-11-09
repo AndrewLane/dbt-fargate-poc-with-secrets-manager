@@ -55,6 +55,7 @@ class DbtFargatePocStack(Stack):
             launch_target=tasks.EcsFargateLaunchTarget(
                 platform_version=ecs.FargatePlatformVersion.LATEST
             ),
+            result_path=sfn.JsonPath.DISCARD,  # will cause the state’s input to become its output
         )
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
