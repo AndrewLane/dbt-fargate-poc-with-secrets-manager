@@ -1,6 +1,7 @@
 from aws_cdk import Stack
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecs as ecs
+from aws_cdk import aws_iam, aws_logs
 from aws_cdk import aws_stepfunctions as sfn
 from aws_cdk import aws_stepfunctions_tasks as tasks
 from constructs import Construct
@@ -64,35 +65,66 @@ class DbtFargatePocStack(Stack):
         container_name = "andrewwlane/dockerized-dbt"  # https://hub.docker.com/r/andrewwlane/dockerized-dbt
         container_tag = "latest"
 
-        fargate_task_definition = ecs.FargateTaskDefinition(
-            self, "DbtExecutionTask", memory_limit_mib=512, cpu=256
+        execution_role = aws_iam.Role(
+            self,
+            "DbtFargateExecutionRole",
+            assumed_by=aws_iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+            role_name="DbtFargateCDKExecutionRole",
         )
-        dbt_run_container = fargate_task_definition.add_container(
+
+        dbt_run_fargate_task_definition = ecs.FargateTaskDefinition(
+            self,
+            "DbtRunExecutionTask",
+            memory_limit_mib=512,
+            cpu=256,
+            execution_role=execution_role,
+            task_role=execution_role,
+        )
+        dbt_test_fargate_task_definition = ecs.FargateTaskDefinition(
+            self,
+            "DbtTestExecutionTask",
+            memory_limit_mib=512,
+            cpu=256,
+            execution_role=execution_role,
+            task_role=execution_role,
+        )
+
+        dbt_run_container = dbt_run_fargate_task_definition.add_container(
             "DbtRunContainer",
             image=ecs.ContainerImage.from_registry(f"{container_name}:{container_tag}"),
             command=["run"],
+            logging=ecs.LogDriver.aws_logs(stream_prefix="FargateDbtRun"),
         )
-        # dbt_test_container = fargate_task_definition.add_container(
-        #     "DbtTestContainer",
-        #     image=ecs.ContainerImage.from_registry(f"{container_name}:{container_tag}"),
-        #     command=["test"],
-        # )
+        dbt_test_container = dbt_test_fargate_task_definition.add_container(
+            "DbtTestContainer",
+            image=ecs.ContainerImage.from_registry(f"{container_name}:{container_tag}"),
+            command=["test"],
+            logging=ecs.LogDriver.aws_logs(stream_prefix="FargateDbtTest"),
+        )
 
         vpc = ec2.Vpc(self, "FargateVpc")
         cluster = ecs.Cluster(self, "DbtFargateCluster", vpc=vpc)
 
         dbt_run_task = self.get_ecs_task(
-            "DbtRunViaFargate", cluster, fargate_task_definition, dbt_run_container
+            "DbtRunViaFargate",
+            cluster,
+            dbt_run_fargate_task_definition,
+            dbt_run_container,
         )
-        # dbt_test_task = self.get_ecs_task(
-        #     "DbtTestViaFargate", cluster, fargate_task_definition, dbt_test_container
-        # )
+        dbt_test_task = self.get_ecs_task(
+            "DbtTestViaFargate",
+            cluster,
+            dbt_test_fargate_task_definition,
+            dbt_test_container,
+        )
+
+        log_group = aws_logs.LogGroup(self, "DbtFargatePocLogGroup")
 
         sfn.StateMachine(
             self,
             "DbtOrchestrationStateMachine",
             definition=dbt_run_task.next(
-                # dbt_test_task.next(sfn.Succeed(self, "DbtComplete"))
-                sfn.Succeed(self, "DbtComplete")
+                dbt_test_task.next(sfn.Succeed(self, "DbtComplete"))
             ),
+            logs=sfn.LogOptions(destination=log_group, level=sfn.LogLevel.ALL),
         )

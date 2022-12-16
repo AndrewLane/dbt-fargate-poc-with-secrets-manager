@@ -5,10 +5,6 @@ An attempt to POC orchestrating dbt via a Step Functions State Machine that runs
 
 Creates the following constructs: VPC, ECS cluster, Fargate task definition, ECS task, State Machine.
 
-## Incomplete
-
-Ideally the state machine would have a task that calls `dbt run` be followed (if it succeeds) by a task that runs `dbt test`, but the test step is not working (just commented out) as of now.
-
 ## Workflow
 
 The Fargate task definition points to a container at https://hub.docker.com/r/andrewwlane/dockerized-dbt (see also: https://github.com/AndrewLane/dockerized-dbt) whose purpose is to execute `dbt run` (or `dbt test`) and use the environment variables passed in to the first task of the state machine.
