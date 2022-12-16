@@ -1,7 +1,7 @@
 from aws_cdk import Stack
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecs as ecs
-from aws_cdk import aws_iam, aws_logs
+from aws_cdk import aws_logs
 from aws_cdk import aws_stepfunctions as sfn
 from aws_cdk import aws_stepfunctions_tasks as tasks
 from constructs import Construct
@@ -65,28 +65,17 @@ class DbtFargatePocStack(Stack):
         container_name = "andrewwlane/dockerized-dbt"  # https://hub.docker.com/r/andrewwlane/dockerized-dbt
         container_tag = "latest"
 
-        execution_role = aws_iam.Role(
-            self,
-            "DbtFargateExecutionRole",
-            assumed_by=aws_iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
-            role_name="DbtFargateCDKExecutionRole",
-        )
-
         dbt_run_fargate_task_definition = ecs.FargateTaskDefinition(
             self,
             "DbtRunExecutionTask",
             memory_limit_mib=512,
             cpu=256,
-            execution_role=execution_role,
-            task_role=execution_role,
         )
         dbt_test_fargate_task_definition = ecs.FargateTaskDefinition(
             self,
             "DbtTestExecutionTask",
             memory_limit_mib=512,
             cpu=256,
-            execution_role=execution_role,
-            task_role=execution_role,
         )
 
         dbt_run_container = dbt_run_fargate_task_definition.add_container(
