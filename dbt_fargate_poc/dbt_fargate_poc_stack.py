@@ -12,30 +12,12 @@ class DbtFargatePocStack(Stack):
     def get_env_var_array():
         return [
             tasks.TaskEnvironmentVariable(
-                name="DBT_SNOWFLAKE_ACCOUNT",
-                value=sfn.JsonPath.string_at("$.DbtSnowflakeAccount"),
+                name="DBT_PROFILES_YML_SECRET_NAME",
+                value=sfn.JsonPath.string_at("$.DbtProfilesYmlSecretName"),
             ),
             tasks.TaskEnvironmentVariable(
-                name="DBT_USER", value=sfn.JsonPath.string_at("$.DbtUser")
-            ),
-            tasks.TaskEnvironmentVariable(
-                name="DBT_PASSWORD",
-                value=sfn.JsonPath.string_at("$.DbtPassword"),
-            ),
-            tasks.TaskEnvironmentVariable(
-                name="DBT_SNOWFLAKE_DATABASE",
-                value=sfn.JsonPath.string_at("$.DbtSnowflakeDatabase"),
-            ),
-            tasks.TaskEnvironmentVariable(
-                name="DBT_ROLE", value=sfn.JsonPath.string_at("$.DbtRole")
-            ),
-            tasks.TaskEnvironmentVariable(
-                name="DBT_SCHEMA",
-                value=sfn.JsonPath.string_at("$.DbtSchema"),
-            ),
-            tasks.TaskEnvironmentVariable(
-                name="DBT_WAREHOUSE",
-                value=sfn.JsonPath.string_at("$.DbtWarehouse"),
+                name="DBT_PRIVATE_KEY_SECRET_NAME",
+                value=sfn.JsonPath.string_at("$.DbtPrivateKeySecretName"),
             ),
         ]
 
@@ -62,7 +44,7 @@ class DbtFargatePocStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        container_name = "andrewwlane/dockerized-dbt"  # https://hub.docker.com/r/andrewwlane/dockerized-dbt
+        container_name = "andrewwlane/dockerized-dbt-with-secrets-manager"  # https://hub.docker.com/r/andrewwlane/dockerized-dbt-with-secrets-manager
         container_tag = "latest"
 
         dbt_run_fargate_task_definition = ecs.FargateTaskDefinition(
