@@ -52,6 +52,7 @@ class DbtFargatePocStack(Stack):
             "DbtFargateExecutionRole",
             assumed_by=aws_iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
             role_name="DbtFargateCDKExecutionRole",
+            managed_policies=[aws_iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")],
         )
 
         dbt_run_fargate_task_definition = ecs.FargateTaskDefinition(
