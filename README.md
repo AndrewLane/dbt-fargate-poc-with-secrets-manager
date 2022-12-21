@@ -13,7 +13,8 @@ The Fargate task definition points to a container at https://hub.docker.com/r/an
 
 ```
 {
-    "DbtSnowflakeAccount": "xxxxx.us-east-1",
+    "DbtProfilesYmlSecretName": "name_of_your_profiles_yml_secret_here",
+    "DbtPrivateKeySecretName": "name_of_your_private_key_secret_here"
 }
 ```
 
